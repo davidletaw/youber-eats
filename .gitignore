@@ -1,8 +1,2 @@
-# Dependencies
-node_modules
-
-# Build artifacts
-build
-
-# Secrets + Config
-.env
+# IDE Files
+.idea
