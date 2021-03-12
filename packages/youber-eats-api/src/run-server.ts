@@ -18,6 +18,34 @@ app.get('/online', (req, res) => {
 });
 
 app.post('/slack-events', (req, res) => {
+    // filter down to the specific event we want
+    const { event } = req.body;
+
+    // Ignore events other than message
+    if (event.type !== 'message') {
+        res.sendStatus(200)
+        return;
+    }
+
+    if (event.subtype === 'bot_message') {
+        res.sendStatus(200)
+        return;
+    }
+
+    // send a message back
+
+    //TODO: if the user says "feed me", set a response, anything else, send an error back
+    if (event.text.toLowerCase() === 'feed me') {
+        axios.post(incomingWebhookUrl, {
+            text: "you got it"
+        });
+    } else {
+        axios.post(incomingWebhookUrl, {
+            text: "Sorry, can't help ya"
+        });
+    }
+
+    res.sendStatus(200)
 });
 
 app.listen(port, () => {
