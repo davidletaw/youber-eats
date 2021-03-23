@@ -3,13 +3,24 @@ import dotenv from 'dotenv'
 import bodyParser from "body-parser";
 import axios from 'axios';
 
-
-dotenv.config(); // load a .env file if it exists, sets/override process.env values
-
-const port = process.env.PORT || 8080;
-const app = express();
+// load a .env file if it exists. Sets/override process.env values
+dotenv.config();
 
 const incomingWebhookUrl = process.env.BOT_SLACK_WEBHOOK_URL;
+const port = process.env.PORT || 8080;
+
+// Validate our config variable(s)
+if (!incomingWebhookUrl) {
+    // If the webhook url is not provided, let the user know, and exit (with an error code, 1)
+    // Tip: We use the specific variable name to make it easy for the user to fix
+    console.error('The env variable BOT_SLACK_WEBHOOK_URL cannot be blank.');
+    process.exit(1);
+}
+
+// Tip: TypeScript now knows that incomingWebhookUrl is a string and no longer "string | undefined"
+// See https://www.typescriptlang.org/docs/handbook/2/narrowing.html
+
+const app = express();
 
 app.use(bodyParser.json());
 
@@ -18,6 +29,25 @@ app.get('/online', (req, res) => {
 });
 
 app.post('/slack-events', (req, res) => {
+
+    if (!req.body.type) {
+        // This is some sort of unexpected payload
+        res.sendStatus(400); // Bad Request
+        return;
+    }
+
+    // Handle URL verification
+    if (req.body.type === 'url_verification') {
+        res.send(req.body.challenge);
+        return;
+    }
+
+    // Next, ignore anything that's not an event
+    if (req.body.type !== 'event_callback' ) {
+        res.sendStatus(200); // a 400 would also be reasonable. We're using a 200 since this is semi-expected.
+        return;
+    }
+
     // filter down to the specific event we want
     const { event } = req.body;
 
@@ -44,7 +74,6 @@ app.post('/slack-events', (req, res) => {
             text: "Sorry, can't help ya"
         });
     }
-
     res.sendStatus(200)
 });
 
